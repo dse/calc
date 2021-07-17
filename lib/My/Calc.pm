@@ -107,8 +107,8 @@ sub evalString {
     return $line;
 }
 
-# <expr>
-# <expr>#<format>
+# {<expr>}
+# {<expr>#<format>}
 sub evalExpressionString {
     # $exprString contains everything in the brackets
     #             but does not contain the brackets
