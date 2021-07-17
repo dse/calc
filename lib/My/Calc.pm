@@ -92,36 +92,38 @@ sub evalStringOrExpression {
 }
 
 # replace each occurrence of {...} in the string, return the result
+#
+# {<expr>}
+# {<expr>#<format>}
+# {<expr>=<result>}
+# {<expr>=<result>#<format>}
 sub evalString {
     my ($self, $line) = @_;
     $line =~ s{(?<open>\{)
                (?<openSpace>\s*)
-               (?<expr>[^\{\}]+?)
+               (?<expr>[^{}=#]+?)
+               (?:
+                   (?<keepPre>\s*=\s*)
+                   (?<keep>[^{}=#]*?)
+               )?
+               (?:
+                   (?<formatPre>\s*\#\s*)
+                   (?<format>[^{}=#]*?)
+               )?
                (?<closeSpace>\s*)
                (?<close>\})}
-              {$self->evalExpressionString($+{expr},
-                                           open => $+{open},
-                                           openSpace => $+{openSpace},
-                                           closeSpace => $+{closeSpace},
-                                           close => $+{close})}geix;
+              {$self->evalExpressionString($+{expr}, %+)}geix;
     return $line;
 }
 
-# {<expr>}
-# {<expr>#<format>}
 sub evalExpressionString {
     # $exprString contains everything in the brackets
     #             but does not contain the brackets
-    my ($self, $exprString) = @_;
-
-    my %args = (
-        original => $exprString
-    );
-
+    my ($self, $exprString, %args) = @_;
+    $args{original} = $exprString;
     if ($exprString =~ s{\#([^#]*)$}{}) {
         $args{format} = $1;
     }
-
     my $result = $self->evalExpression($exprString, %args);
 }
 
@@ -136,16 +138,53 @@ sub evalExpression {
 
     if ($@) {
         warn($@);
-        return undef;
+        if (defined $args{keep}) {
+            return
+              $args{open} .
+              $args{openSpace} .
+              $args{expr} .
+              $args{keepPre} .
+              $args{keep} .
+              ($args{formatPre} // '') .
+              ($args{format} // '') .
+              $args{closeSpace} .
+              $args{close};
+        }
+        return '';
     }
     if (!defined $result) {
-        return undef;
+        if (defined $args{keep}) {
+            return
+              $args{open} .
+              $args{openSpace} .
+              $args{expr} .
+              $args{keepPre} .
+              $args{keep} .
+              ($args{formatPre} // '') .
+              ($args{format} // '') .
+              $args{closeSpace} .
+              $args{close};
+        }
+        return '';
     }
 
     if (defined $args{format}) {
         $result = sprintf($args{format}, $result);
     } elsif (defined $self->{format}) {
         $result = sprintf($self->{format}, $result);
+    }
+
+    if (defined $args{keep}) {
+        return
+          $args{open} .
+          $args{openSpace} .
+          $args{expr} .
+          $args{keepPre} .
+          $result .
+          ($args{formatPre} // '').
+          ($args{format} // '').
+          $args{closeSpace} .
+          $args{close};
     }
 
     return $result;
