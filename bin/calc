@@ -1,0 +1,66 @@
+#!/usr/bin/env perl
+use warnings;
+use strict;
+use utf8;
+use v5.14.0;                # required for srand() to return the seed.
+
+#------------------------------------------------------------------------------
+use File::Basename qw(basename);
+our $PROGNAME = basename($0);
+
+#------------------------------------------------------------------------------
+use open IO => qw(:locale);
+use I18N::Langinfo qw(langinfo CODESET);
+use Encode qw(decode);
+BEGIN {
+    my $codeset = langinfo(CODESET);
+    @ARGV = map { decode($codeset, $_, Encode::FB_CROAK) } @ARGV;
+}
+
+#------------------------------------------------------------------------------
+our $optInteractive;
+our $optAsExpressions;
+our $optAsFilenames;
+our $optFormat;
+our $optStandardInput;
+
+#------------------------------------------------------------------------------
+use Getopt::Long;
+Getopt::Long::Configure('bundling', 'gnu_compat', 'no_ignore_case');
+Getopt::Long::GetOptions(
+    'E|expressions|as-expressions' => \$optAsExpressions,
+    'F|filenames|as-filenames'     => \$optAsFilenames,
+    'f|format=s'                   => \$optFormat,
+    'i|interactive'                => \$optInteractive,
+    'stdin|standard-input'         => \$optStandardInput,
+    'h|help' => sub {
+        usage(); exit(0);
+    },
+) or die("Type '$PROGNAME --help' for help.\n");
+
+sub usage { print(<<"END"); }
+usage:
+    $PROGNAME [<option> ...] [<filename>|<expression> ...]
+options:
+    -h, --help              display this information
+    -E, --as-expressions    interpret arguments as expressions
+    -F, --as-filenames      interpret arguments as filenames
+    -i, --interactive       force interactive mode
+    -s, --standard-input    force standard-input mode
+    -f, --format=<string>   numeric display format
+END
+
+###############################################################################
+
+use FindBin;
+use lib "${FindBin::Bin}/../lib";
+
+use My::Calc;
+
+my $calc = My::Calc->new();
+$calc->{asExpressions} = $optAsExpressions if defined $optAsExpressions;
+$calc->{asFilenames}   = $optAsFilenames   if defined $optAsFilenames;
+$calc->{interactive}   = $optInteractive   if defined $optInteractive;
+$calc->{standardInput} = $optStandardInput if defined $optStandardInput;
+$calc->{format}        = $optFormat        if defined $optFormat;
+$calc->runCommandLine(@ARGV);
