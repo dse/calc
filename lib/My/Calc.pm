@@ -99,12 +99,11 @@ sub evalString {
                (?<expr>[^\{\}]+?)
                (?<closeSpace>\s*)
                (?<close>\})}
-              {
-                  $self->evalExpressionString($+{expr},
-                                              open => $+{open},
-                                              openSpace => $+{openSpace},
-                                              closeSpace => $+{closeSpace},
-                                              close => $+{close})}geix;
+              {$self->evalExpressionString($+{expr},
+                                           open => $+{open},
+                                           openSpace => $+{openSpace},
+                                           closeSpace => $+{closeSpace},
+                                           close => $+{close})}geix;
     return $line;
 }
 
