@@ -53,8 +53,8 @@ sub runCommandLine {
         $self->runInteractively();
     } elsif ($self->{asFilenames}) {
         $self->runMagicFilehandle(@args);
-    } elsif (scalar @ARGV) {
-        foreach my $arg (@ARGV) {
+    } elsif (scalar @args) {
+        foreach my $arg (@args) {
             say $self->evalExpression($arg);
         }
     } else {
