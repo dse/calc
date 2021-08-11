@@ -26,7 +26,7 @@ BEGIN {
     importeach Math::Trig, qw(:pi);
 }
 
-use Term::Readline;
+use Term::ReadLine;
 
 sub new {
     my ($class) = @_;
