@@ -99,19 +99,28 @@ sub evalStringOrExpression {
 # {<expr>=<result>#<format>}
 sub evalString {
     my ($self, $line) = @_;
-    $line =~ s{(?<open>\{)
-               (?<openSpace>\s*)
+    $line =~ s{(?<pre>
+                   (?<open>\{)
+                   (?<openSpace>\s*)
+                   (?:
+                       (?<varPrefix>\$)
+                       (?<varName>[A-Za-z_][A-Za-z_0-9]*)
+                       (?<varEqual>\s*=\s*)
+                   )?
+               )
                (?<expr>[^{}=#]+?)
-               (?:
+               (?<keeper>
                    (?<keepPre>\s*=\s*)
                    (?<keep>[^{}=#]*?)
                )?
-               (?:
-                   (?<formatPre>\s*\#\s*)
-                   (?<format>[^{}=#]*?)
-               )?
-               (?<closeSpace>\s*)
-               (?<close>\})}
+               (?<post>
+                   (?:
+                       (?<formatPre>\s*\#\s*)
+                       (?<format>[^{}#]*?)
+                   )?
+                   (?<closeSpace>\s*)
+                   (?<close>\})
+               )}
               {$self->evalExpressionString($+{expr}, %+)}geix;
     return $line;
 }
@@ -119,7 +128,13 @@ sub evalString {
 sub evalExpressionString {
     # $exprString contains everything in the brackets
     #             but does not contain the brackets
-    my ($self, $exprString, %args) = @_;
+    my ($self, $exprString, @args) = @_;
+
+    if ($ENV{DEBUG}) {
+        warn("$exprString @args\n");
+    }
+
+    my %args = @args;
     $args{original} = $exprString;
     if ($exprString =~ s{\#([^#]*)$}{}) {
         $args{format} = $1;
@@ -130,42 +145,33 @@ sub evalExpressionString {
 sub evalExpression {
     my ($self, $expr, %args) = @_;
 
+    state %vars;
+
     $expr =~ s{\N{MINUS SIGN}}{-}g;
     $expr =~ s{\N{MULTIPLICATION SIGN}}{*}g;
     $expr =~ s{\N{DIVISION SIGN}}{/}g;
+
+    $expr =~ s{\$(?<ident>[A-Za-z_][A-Za-z_0-9]*)}
+              {\$vars\{$+{ident}\}}gx;
 
     my $result = eval $expr;
 
     if ($@) {
         warn($@);
         if (defined $args{keep}) {
-            return
-              $args{open} .
-              $args{openSpace} .
-              $args{expr} .
-              $args{keepPre} .
-              $args{keep} .
-              ($args{formatPre} // '') .
-              ($args{format} // '') .
-              $args{closeSpace} .
-              $args{close};
+            return "$args{pre}$args{keeper}$args{post}";
         }
         return '';
     }
     if (!defined $result) {
         if (defined $args{keep}) {
-            return
-              $args{open} .
-              $args{openSpace} .
-              $args{expr} .
-              $args{keepPre} .
-              $args{keep} .
-              ($args{formatPre} // '') .
-              ($args{format} // '') .
-              $args{closeSpace} .
-              $args{close};
+            return "$args{pre}$args{keeper}$args{post}";
         }
         return '';
+    }
+
+    if (defined $args{varName}) {
+        $vars{$args{varName}} = $result;
     }
 
     if (defined $args{format}) {
@@ -175,16 +181,7 @@ sub evalExpression {
     }
 
     if (defined $args{keep}) {
-        return
-          $args{open} .
-          $args{openSpace} .
-          $args{expr} .
-          $args{keepPre} .
-          $result .
-          ($args{formatPre} // '').
-          ($args{format} // '').
-          $args{closeSpace} .
-          $args{close};
+        return "$args{pre}$args{expr}$args{keepPre}${result}$args{post}";
     }
 
     return $result;

@@ -18,17 +18,16 @@ BEGIN {
 }
 
 #------------------------------------------------------------------------------
-our $optInteractive;
-our $optAsExpressions;
-our $optAsFilenames;
+our $optInteractive = 0;
+our $optAsFilenames = 0;
 our $optFormat;
-our $optStandardInput;
+our $optStandardInput = 0;
 
 #------------------------------------------------------------------------------
 use Getopt::Long;
 Getopt::Long::Configure('bundling', 'gnu_compat', 'no_ignore_case');
 Getopt::Long::GetOptions(
-    'E|expressions|as-expressions' => \$optAsExpressions,
+    'E|expressions|as-expressions' => sub { $optAsFilenames = 0; },
     'F|filenames|as-filenames'     => \$optAsFilenames,
     'f|format=s'                   => \$optFormat,
     'i|interactive'                => \$optInteractive,
@@ -47,7 +46,7 @@ options:
     -F, --as-filenames      interpret arguments as filenames
     -i, --interactive       force interactive mode
     -s, --standard-input    force standard-input mode
-    -f, --format=<string>   numeric display format
+    -f, --format=<string>   numeric display format (a la printf)
 END
 
 ###############################################################################
@@ -58,9 +57,52 @@ use lib "${FindBin::Bin}/../lib";
 use My::Calc;
 
 my $calc = My::Calc->new();
-$calc->{asExpressions} = $optAsExpressions if defined $optAsExpressions;
-$calc->{asFilenames}   = $optAsFilenames   if defined $optAsFilenames;
-$calc->{interactive}   = $optInteractive   if defined $optInteractive;
-$calc->{standardInput} = $optStandardInput if defined $optStandardInput;
+$calc->{asFilenames}   = $optAsFilenames;
+$calc->{interactive}   = $optInteractive;
+$calc->{standardInput} = $optStandardInput;
 $calc->{format}        = $optFormat        if defined $optFormat;
 $calc->runCommandLine(@ARGV);
+
+=head1 NAME
+
+calc - command-line calculator
+
+=head1 SYNOPSIS
+
+    calc                                        interactive or read from stdin
+    calc '<expr>' ...                           calculate results of exprs
+    calc -F/--as-filenames <filename> ...       read from specified files
+    calc -f/--format '<printf-spec>' ...        specify numeric output format
+
+=head1 DESCRIPTION
+
+C<calc> is a command line calculator.  You can specify expressions to
+calculate either interactively, on the command line itself, or in
+filenames fed to C<calc>.
+
+=head2 Interactive Mode
+
+To use C<calc> interactively, just run the command C<calc> in a
+terminal.  You'll be prompted thusly:
+
+    calc> _
+
+Type an expression, and press Return/Enter.
+
+    calc> 69 * 420
+    28980
+    calc> _
+
+To exit C<calc>'s interactive mode and return to the shell you invoked
+C<calc> from, either type C<exit> or press Control+D.
+
+To use interactive mode, stdin and stdout must be opened to a tty, and
+you must specify no expression or filename arguments.
+
+=head2 Standard Input
+
+To use standard input mode, either stdin or stdout must be opened to
+something other than a tty.  You must specify no expression or
+filename arguments.
+
+=head2 Read From Files
