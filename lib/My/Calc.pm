@@ -44,6 +44,9 @@ use Term::ReadLine;
 use Text::Wrap qw(wrap);
 use Data::Dumper qw(Dumper);
 
+use lib '..';
+use My::CalcTime;
+
 sub new {
     my ($class) = @_;
     my $self = bless({}, $class);
@@ -182,15 +185,34 @@ sub evalExpressionString {
     return $result;
 }
 
+our $NUM;
+BEGIN {
+    $NUM = qr{(?:\d+(?:\.\d*)?|\.\d+)};
+}
+
 sub evalExpression {
     my ($self, $expr, %args) = @_;
+    # warn("evalExpression $expr\n");
 
     state %vars;
+
+    # {3:1:5} => My::CalcTime->new('3:1:5');
+    # warn("<< $expr\n");
+    $expr =~ s{\(\s*
+               (
+                   ${NUM}?
+                   (?:
+                       \s*\:\s*${NUM}
+                   )+
+               )
+               \s*\)}{My::CalcTime->new('$&')}gx;
+    # warn(">> $expr\n");
 
     $expr =~ s{\N{MINUS SIGN}}{-}g;
     $expr =~ s{\N{MULTIPLICATION SIGN}}{*}g;
     $expr =~ s{\N{DIVISION SIGN}}{/}g;
 
+    # $fooBar => $vars{fooBar}
     $expr =~ s{\$(?<ident>[A-Za-z_][A-Za-z_0-9]*)}
               {\$vars\{$+{ident}\}}gx;
 
