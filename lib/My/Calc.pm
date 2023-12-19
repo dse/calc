@@ -26,6 +26,11 @@ BEGIN {
     importeach Math::Trig, qw(:pi);
 }
 
+our $__;
+sub _ () {
+    return $__;
+}
+
 use Term::ReadLine;
 
 sub new {
@@ -42,7 +47,12 @@ sub runInteractively {
     local $_;
     while (defined ($_ = $term->readline($prompt))) {
         s{\R\z}{};
-        say $self->evalStringOrExpression($_);
+        $__ = $self->{_} // 0;
+        my $result = $self->evalStringOrExpression($_);
+        if (defined $result) {
+            $self->{_} = $result;
+        }
+        say $result;
     }
 }
 
@@ -89,6 +99,9 @@ sub evalStringOrExpression {
         return $self->evalString($line);
     }
     return $self->evalExpression($line);
+
+    # evalString calls evalExpressionString
+    # evalExpressionString calls evalExpression
 }
 
 # replace each occurrence of {...} in the string, return the result
