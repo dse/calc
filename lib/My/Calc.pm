@@ -5,12 +5,26 @@ use utf8;
 use v5.14.0;                # required for srand() to return the seed.
 use feature 'say';
 
+our @IMPORTED;
+our $INTERACTIVE = 0;
+
 sub importeach (*@) {
     my $module = shift;
     eval "use $module;";
     return if $@;
     foreach my $symbol (@_) {
+        my %before = do { no strict 'refs'; map { ($_ => 1) } keys %{__PACKAGE__ . '::'}; };
         eval { import $module $symbol; };
+        my %after = do { no strict 'refs'; map { ($_ => 1) } keys %{__PACKAGE__ . '::'}; };
+        if ($symbol =~ m{^:}) {
+            my @new = grep { !exists($before{$_}) } keys %after;
+            push(@IMPORTED, @new);
+        } else {
+            no strict 'refs';
+            if (exists ${__PACKAGE__ . '::'}{$symbol}) {
+                push(@IMPORTED, $symbol);
+            }
+        }
     }
 }
 
@@ -32,12 +46,16 @@ sub _ () {
 }
 
 use Term::ReadLine;
+use Text::Wrap qw(wrap);
+use Data::Dumper qw(Dumper);
 
 sub new {
     my ($class) = @_;
     my $self = bless({}, $class);
     return $self;
 }
+
+our $__ = 0;
 
 sub runInteractively {
     (my $self) = @_;
@@ -47,19 +65,42 @@ sub runInteractively {
     local $_;
     while (defined ($_ = $term->readline($prompt))) {
         s{\R\z}{};
-        $__ = $self->{_} // 0;
+        # <<<<<<< HEAD
+        # $__ = $self->{_} // 0;
+        # my $result = $self->evalStringOrExpression($_);
+        # if (defined $result) {
+        #     $self->{_} = $result;
+        # }
+        # say $result;
+        # =======
         my $result = $self->evalStringOrExpression($_);
         if (defined $result) {
-            $self->{_} = $result;
+            $__ = $result;
+            say $result;
         }
-        say $result;
+        # >>>>>>> f6ab36a445edc6bdd3e14634f43c80622b3d869e
     }
+}
+
+sub help () {
+    print("\n");
+    print("All built-in Perl math operators and functions are supported.\n");
+    print("The following additional functions are supported:\n");
+    print(wrap("    ", "    ", join(', ', @IMPORTED)), "\n");
+    print("Use _ to refer to the value of the previous result.\n");
+    print("\n");
+    return;
+}
+
+sub _ () {
+    return $__;
 }
 
 sub runCommandLine {
     (my $self, my @args) = @_;
 
-    if (-t 0 && -t 1 && !scalar @args) {
+    $INTERACTIVE = (-t 0 && -t 1 && !scalar @args);
+    if ($INTERACTIVE) {
         $self->runInteractively();
     } elsif ($self->{asFilenames}) {
         $self->runMagicFilehandle(@args);
@@ -96,12 +137,11 @@ sub runFilename {
 sub evalStringOrExpression {
     my ($self, $line) = @_;
     if ($line =~ m{\{.*\}}) {
-        return $self->evalString($line);
+        my $result = $self->evalString($line);
+        return $result;
     }
-    return $self->evalExpression($line);
-
-    # evalString calls evalExpressionString
-    # evalExpressionString calls evalExpression
+    my $result = $self->evalExpression($line);
+    return $result;
 }
 
 # replace each occurrence of {...} in the string, return the result
@@ -153,6 +193,7 @@ sub evalExpressionString {
         $args{format} = $1;
     }
     my $result = $self->evalExpression($exprString, %args);
+    return $result;
 }
 
 sub evalExpression {
@@ -168,6 +209,13 @@ sub evalExpression {
               {\$vars\{$+{ident}\}}gx;
 
     my $result = eval $expr;
+
+    if ($INTERACTIVE) {
+        if ($@) {
+            warn($@);
+        }
+        return $result;
+    }
 
     if ($@) {
         warn($@);
