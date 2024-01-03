@@ -40,7 +40,7 @@ BEGIN {
     importeach Math::Trig, qw(:pi);
 }
 
-our $__;
+our $__ = 0;
 sub _ () {
     return $__;
 }
@@ -54,8 +54,6 @@ sub new {
     my $self = bless({}, $class);
     return $self;
 }
-
-our $__ = 0;
 
 sub runInteractively {
     (my $self) = @_;
@@ -90,10 +88,6 @@ sub help () {
     print("Use _ to refer to the value of the previous result.\n");
     print("\n");
     return;
-}
-
-sub _ () {
-    return $__;
 }
 
 sub runCommandLine {
