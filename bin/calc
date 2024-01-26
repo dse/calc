@@ -66,8 +66,15 @@ if (-t 0 && -t 1 && !scalar @ARGV) {
         $last_result = $calc_result;
     }
 } else {
-    # {<expr>}
-    # {<expr>=<text>}
+    # syntaxes:
+    #     {<expr>}                  => {<result>}
+    #     {<expr>=<text>}           => {<expr>=<result>}
+    # maybe:
+    #     {$<ident>:=<expr>}        => {$<ident>:=<result>}
+    #     {$<ident>:=<expr>=<text>} => {$<ident>:=<expr>=<result>}
+    # possibly:
+    #     {<expr>#<format>}         => {<result>}
+    #     {<expr>=<text>#<format>}  => {<expr>=<result>#<format>}
     while (<>) {
         s{(?<open>\{)
           (?<space1>\s*)
