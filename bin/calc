@@ -22,6 +22,24 @@ get("POSIX", qw(acos asin atan ceil cosh floor fmod frexp
 get("List::Util", qw(min max minn));
 get("Math::Trig", qw(:pi));
 
+# mode 1:
+#     interactive calc> prompt
+# mode 2:
+#     each argument is a filename, or read from stdin
+#     mode 2.1:
+#         each line is an expression
+#     mode 2.2:
+#         each line may contain {...} placeholders
+# mode 3:
+#     each argument is an expression
+#
+# if not interactive mode, how are we supposed to guess?
+# do we require the user to specify mode 2.1, 2.2, or 3?
+#
+# calc -e   each argument is an expression
+# calc -f   each argument is a filename; each line an expression
+# calc -F   each argument is a filename; each line contains placeholders
+
 if (-t 0 && -t 1 && !scalar @ARGV) {
     my $term = Term::ReadLine->new('calc');
     my $prompt = 'calc> ';
@@ -96,9 +114,9 @@ sub _ () {
 
 sub help {
     foreach my $module (sort keys %gotten) {
-        my $line_1 = "$module => ";
+        my $line_1 = sprintf("%-16s => ", $module);
         my $line_2 = " " x length($line_1);
-        print(wrap($line_1, $line_2, join(' ', @{$gotten{$module}})), "\n");
+        print(wrap($line_1, $line_2, join(' ', sort @{$gotten{$module}})), "\n");
     }
 }
 
