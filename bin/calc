@@ -19,6 +19,14 @@ sub _ () {
 #     { expr = # fmt }
 #     { expr = text }
 #     { expr = text # fmt }
+# also:
+#     { expr => }
+#     { expr => # fmt }
+#     { expr => text }
+#     { expr => text # fmt }
+# possible:
+#     { $ ident = expr ... }
+#     { $ ident := expr ... }
 while (<>) {
     s{(?<start>\{)
       (?<sp1>\s*)
@@ -62,7 +70,11 @@ sub replace {
 sub evaluate {
     my ($expr, $fmt) = @_;
     return $expr if looks_like_number($expr) && !defined $fmt;
-    my $result = eval($expr);
+    my $result = do {
+        no warnings;
+        no strict;
+        eval($expr);
+    };
     if (defined $result) {
         $last_result = $result;
     }
