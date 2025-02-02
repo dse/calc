@@ -1,75 +1,55 @@
 #!/usr/bin/env perl
 use warnings;
 use strict;
-use Scalar::Util qw(looks_like_number);
 use POSIX qw(:math_h);
 use POSIX qw(:math_h_c99);
 use Math::Trig qw(:pi);
 use Math::Trig qw(:radial);
 use Math::Trig qw(:great_circle);
+use Term::ReadLine;
+use Text::Wrap;
 our $last_result = 0;
 sub _ () {
     # prototype required for things like "_ + 5" to work
     return $last_result;
 }
-# supported:
-#     { expr }
-#     { expr # fmt }
-#     { expr = }
-#     { expr = # fmt }
-#     { expr = text }
-#     { expr = text # fmt }
-# also:
-#     { expr => }
-#     { expr => # fmt }
-#     { expr => text }
-#     { expr => text # fmt }
-# possible:
-#     { $ ident = expr ... }
-#     { $ ident := expr ... }
-while (<>) {
-    s{(?<start>\{)
-      (?<sp1>\s*)
-      (?<expr>\S.*?)
-      (?<sp2>\s*)
-      (?:
-          (?<eq>=>?)
-          (?<sp3>\s*)
-          (?:
-              (?<repl>\S.*?)
-              (?<sp4>\s*)
-          )?? (?# non-greedy in case char after '=' is '#' )
-      )?
-      (?<fmt_sep_fmt>
-          (?<fmt_sep>\#)
-          (?<sp5>\s*)
-          (?:
-              (?<fmt>\S.*?)
-              (?<sp6>\s*)
-          )?
-      )?
-      (?<end>\})}
-     { replace($&, %+) }gex;
-    print;
+if (!scalar @ARGV && -t 0 && -t 1) {
+    my $green = `tput setaf 2`;
+    my $reset = `tput sgr0`;
+    my $has_term_readline_gnu  = eval { require Term::ReadLine::Gnu };
+    my $has_term_readline_perl = eval { require Term::ReadLine::Perl };
+    my $has_term_readline_zoid = eval { require Term::ReadLine::Zoid };
+    my $term_readline_class =
+      defined $ENV{TERM_RL} ? "Term::ReadLine" :
+      $has_term_readline_gnu ? "Term::ReadLine::Gnu" :
+      $has_term_readline_zoid ? "Term::ReadLine::Zoid" :
+      $has_term_readline_perl ? "Term::ReadLine::Perl" :
+      "Term::ReadLine";
+    warn("Loading $term_readline_class\n");
+    my $term = $term_readline_class->new('calci');
+    my $prompt = "${green}calci>${reset} ";
+    while (defined($_ = $term->readline($prompt))) {
+        evaluate_print();
+    }
+} else {
+    while (<>) {
+        evaluate_print();
+    }
 }
-sub replace {
-    my ($match, %group) = @_;
-    my ($start, $sp1, $expr, $sp2, $eq, $sp3, $repl, $sp4, $fmt_sep_fmt, $fmt_sep, $sp5, $fmt, $sp6, $end)
-      = @group{qw(start sp1 expr sp2 eq sp3 repl sp4 fmt_sep_fmt fmt_sep sp5 fmt sp6 end)};
-    my $eval = evaluate($expr, $fmt);
+sub evaluate_print {
+    if (/^\s*(help|\?)\s*$/i) {
+        print(wrap('', '', join(', ', imports())), "\n");
+        next;
+    }
+    my $result = evaluate($_);
     if ($@) {
         warn($@);
-        return $match;
+        next;
     }
-    if (defined $eq) {
-        return $start . $sp1 . $expr . $sp2 . $eq . $sp3 . $eval . ($sp4 // $sp3) . ($fmt_sep_fmt // '') . $end;
-        #      {               2 + 2          =            whatever                    #       %d       }
-    }
-    return $start . $sp1 . $eval . $sp2 . $end;
+    print("$result\n");
 }
 sub evaluate {
     my ($expr, $fmt) = @_;
-    return $expr if looks_like_number($expr) && !defined $fmt;
     my $result = do {
         no warnings;
         no strict;
@@ -78,6 +58,13 @@ sub evaluate {
     if (defined $result) {
         $last_result = $result;
     }
-    $result = sprintf($fmt, $result) if defined $result && defined $fmt;
     return $result;
+}
+sub imports {
+    my %imports = map { $_ => 1 } (@{$POSIX::EXPORT_TAGS{math_h}},
+                                   @{$POSIX::EXPORT_TAGS{math_h_c99}},
+                                   @{$Math::Trig::EXPORT_TAGS{pi}},
+                                   @{$Math::Trig::EXPORT_TAGS{radial}},
+                                   @{$Math::Trig::EXPORT_TAGS{great_circle}});
+    return sort keys %imports;
 }
