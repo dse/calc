@@ -36,8 +36,8 @@ if (!scalar @ARGV && -t 0 && -t 1) {
       $has_term_readline_perl ? "Term::ReadLine::Perl" :
       "Term::ReadLine";
     warn("Loading $term_readline_class\n");
-    my $term = $term_readline_class->new('calci');
-    my $prompt = "${green}calci>${reset} ";
+    my $term = $term_readline_class->new('calc');
+    my $prompt = "${green}calc>${reset} ";
     while (defined($_ = $term->readline($prompt))) {
         evaluate_print();
     }
