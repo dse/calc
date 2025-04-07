@@ -28,11 +28,12 @@ sub calc_evaluate {
         # no strict;
         eval($expr);
     };
-    if (defined $result) {
-        $last_result = $result;
-        if (defined $fmt) {
-            $result = sprintf($fmt, $result);
-        }
+    if (!defined $result) {
+        return;
+    }
+    $last_result = $result;
+    if (defined $fmt) {
+        $result = sprintf($fmt, $result);
     }
     return $result;
 }
