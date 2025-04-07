@@ -1,11 +1,11 @@
 #!/usr/bin/env perl
 use warnings;
 use strict;
-use Scalar::Util qw(looks_like_number);
 use File::Basename qw(dirname);
 
 use lib dirname(__FILE__) . "/../lib";
 use My::Calc::Functions qw(:all);
+use My::Calc qw(calc_evaluate);
 
 our $format;
 
@@ -16,13 +16,6 @@ Getopt::Long::GetOptions(
 
 use Term::ReadLine;
 use Text::Wrap;
-
-our $last_result = 0;
-
-sub _ () {
-    # prototype required for things like "_ + 5" to work
-    return $last_result;
-}
 
 if (!scalar @ARGV && -t 0 && -t 1) {
     my $green = `tput setaf 2`;
@@ -55,25 +48,12 @@ sub evaluate_print {
         print(wrap('', '', join(', ', @functions)), "\n");
         return;
     }
-    my $result = evaluate($_);
+    my $result = calc_evaluate($_, $format);
     if ($@) {
         warn($@);
         return;
     }
-    print("$result\n");
-}
-
-sub evaluate {
-    my ($expr, $fmt) = @_;
-    $fmt = $fmt // $format;
-    return $expr if looks_like_number($expr) && !defined $fmt;
-    my $result = do {
-        no warnings;
-        no strict;
-        eval($expr);
-    };
     if (defined $result) {
-        $last_result = $result;
+        print("$result\n");
     }
-    return $result;
 }
