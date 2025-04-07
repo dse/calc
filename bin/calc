@@ -42,7 +42,7 @@ if (!scalar @ARGV && -t 0 && -t 1) {
 
 sub evaluate_print {
     if (/^\s*(help|\?)\s*$/i) {
-        my @functions = My::Calc::Functions::calc_functions();
+        my @functions = calc_functions();
         @functions = sort @functions;
         print(wrap('', '', join(', ', @functions)), "\n");
         return;
