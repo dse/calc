@@ -2,6 +2,7 @@ package My::Calc;
 use warnings;
 use strict;
 use Scalar::Util qw(looks_like_number);
+use File::Basename qw(dirname);
 
 use base "Exporter";
 our @EXPORT = qw();
@@ -9,6 +10,9 @@ our @EXPORT_OK = qw(calc_evaluate);
 our %EXPORT_TAGS = (all => \@EXPORT_OK);
 
 our $last_result = 0;
+
+use lib dirname(__FILE__) . "/../../lib";
+use My::Calc::Functions qw(:all);
 
 sub _ () {
     # prototype required for things like "_ + 5" to work
