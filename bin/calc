@@ -56,3 +56,130 @@ sub evaluate_print {
         print("$result\n");
     }
 }
+
+=pod
+
+=head1 NAME
+
+calc - Perl-based interactive desktop calculator
+
+=head1 SYNOPSIS
+
+    $ calc
+    calc> (8 ** 2) + (6 ** 2)
+    100
+    calc> _ - 1                 # 100 - 1
+    99
+    calc> # _ - 3               # 99 - 3
+    96
+    calc> # _ - 5               # 99 - 5
+    94
+    calc> _ - 7                 # 99 - 7
+    92
+    calc> _ - 5                 # 92 - 5
+    87
+
+=head1 DESCRIPTION
+
+The calc program displays a prompt indicating that the user should
+type in a expression, typically one returning a number.  Any valid
+expression in Perl can actually be used, but some features may not
+work with non-numeric values.
+
+After the expression is entered and the user presses Enter, calc
+prints the return value of the expression and prompts the user to
+enter another calculation.
+
+You can think of calc as a REPL (read-eval-print loop) of sorts.
+
+=head2 Exiting
+
+Typing "exit" and pressing Enter exits calc.
+
+=head2 Help
+
+Typing "help" and pressing Enter yields a list of mathematical
+functions imported.  This will vary with your version of Perl.  See
+the "IMPORTED FUNCTIONS" section for details.
+
+=head2 Calculating Using Previous Result
+
+An additional special expression, "_", returns the most recently
+calculated numeric or **numeric-looking** (see looks_like_number in
+Scalar::Util) result, allowing the user to perform successive
+calculations starting with a number.
+
+=head3 Do Not Store This Result
+
+To not store the result into "_" after typing an expression, precede
+it with "#".
+
+    calc> 420 * 69
+    28980
+    calc> # _ % 13              # 28980 % 3 (not stored in "_")
+    3
+    calc> # _ ** 2              # 28980 ** 2 (not 3 ** 2; not stored in "_")
+    839840400
+    calc> _ % 61                # 28980 % 61
+    5
+    calc> _ ** 2                # 5 ** 2
+    25
+
+An expression yielding an error (a la "die") will not erase the last
+returned result.
+
+=head1 OPTIONS
+
+=over 4
+
+=item -f|--format=STR
+
+Instructs calc to print expression return values using the supplied
+sprintf format.  Perl's built-in sprintf function is used; for
+acceptable formats see "perldoc -f sprintf".
+
+=back
+
+=head1 IMPORTED FUNCTIONS
+
+The calc program attempts to perform the equivalent of the following:
+
+    use POSIX qw(:math_h);
+    use POSIX qw(:math_h_c99);
+    use Math::Trig qw(:pi);
+    use Math::Trig qw(:radial);
+    use Math::Trig qw(:great_circle);
+
+with the exception that errors are caught and ignored.  All
+successfully imported functions will be displayed when the user types
+"help".
+
+Of course, Perl's built-in math functions will always be available.
+
+=head1 INTERACTIVITY
+
+The calc program tries the following readline modules in order and
+uses the first one that successfully loads:
+
+    Term::ReadLine::Gnu
+    Term::ReadLine::Zoid
+    Term::ReadLine::Perl
+
+A message displaying which package was loaded is printed before calc
+issues its first prompt.
+
+=head1 NON-INTERACTIVITY
+
+If standard output is not a tty, calc will simply read one line from
+standard input, evaluate it as an expression, print its return value,
+and repeat ad infinitum.
+
+=head1 AUTHOR
+
+Darren Embry (dsembry@gmail.com).
+
+=head1 LICENSE
+
+Same terms as Perl itself.
+
+=cut
