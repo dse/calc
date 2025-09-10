@@ -21,7 +21,14 @@ sub _ () {
 
 sub calc_evaluate {
     my ($expr, $fmt) = @_;
+    my $store_last_result = 1;
+    if ($expr =~ s/^\s*#\s*//) {
+        $store_last_result = 0;
+    }
     if (looks_like_number($expr)) {
+        if ($store_last_result) {
+            $last_result = $expr;
+        }
         if (!defined $fmt) {
             return $expr;
         }
@@ -35,7 +42,9 @@ sub calc_evaluate {
     if (!defined $result) {
         return;
     }
-    $last_result = $result;
+    if (looks_like_number($expr) && $store_last_result) {
+        $last_result = $result;
+    }
     if (defined $fmt) {
         $result = sprintf($fmt, $result);
     }
