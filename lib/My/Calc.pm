@@ -42,7 +42,7 @@ sub calc_evaluate {
     if (!defined $result) {
         return;
     }
-    if (looks_like_number($expr) && $store_last_result) {
+    if (looks_like_number($result) && $store_last_result) {
         $last_result = $result;
     }
     if (defined $fmt) {
