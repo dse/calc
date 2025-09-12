@@ -82,8 +82,9 @@ calc - Perl-based interactive desktop calculator
 =head1 DESCRIPTION
 
 The calc program displays a prompt indicating that the user should
-type in a expression customarily returning a number.  Any valid
-expression in Perl can actually be used.
+type in a expression, typically one returning a number.  Any valid
+expression in Perl can actually be used, but some features may not
+work with non-numeric values.
 
 After the expression is entered and the user presses Enter, calc
 prints the return value of the expression and prompts the user to
