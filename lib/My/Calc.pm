@@ -1,6 +1,9 @@
 package My::Calc;
 use warnings;
 use strict;
+
+use bignum;
+
 use Scalar::Util qw(looks_like_number);
 use File::Basename qw(dirname);
 
