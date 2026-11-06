@@ -2,51 +2,16 @@
 use warnings;
 use strict;
 
-use bignum;
+use Scalar::Util qw(looks_like_number);
 
-use File::Basename qw(dirname);
+use FindBin;
+use lib "${FindBin::Bin}/../lib";
 
-use lib dirname(__FILE__) . "/../lib";
 use My::Calc::Functions qw(:all);
-use My::Calc qw(calc_evaluate);
+use My::Calc::Calc qw(eval_calc_tag $RX_CALC_TAG);
 
+local $/ = undef;
 while (<>) {
-    s{(?<start>\{)
-      (?<sp1>\s*)
-      (?<expr>\S.*?)
-      (?<sp2>\s*)
-      (?:
-          (?<eq>=>?)
-          (?<sp3>\s*)
-          (?:
-              (?<repl>\S.*?)
-              (?<sp4>\s*)
-          )?? (?# non-greedy in case char after '=' is '#' )
-      )?
-      (?<fmt_sep_fmt>
-          (?<fmt_sep>\#)
-          (?<sp5>\s*)
-          (?:
-              (?<fmt>\S.*?)
-              (?<sp6>\s*)
-          )?
-      )?
-      (?<end>\})}
-     { replace($&, %+) }gex;
+    s{$RX_CALC_TAG}{eval_calc_tag($&, %+)}ge;
     print;
-}
-
-sub replace {
-    my ($match, %group) = @_;
-    my ($start, $sp1, $expr, $sp2, $eq, $sp3, $repl, $sp4, $fmt_sep_fmt, $fmt_sep, $sp5, $fmt, $sp6, $end)
-      = @group{qw(start sp1 expr sp2 eq sp3 repl sp4 fmt_sep_fmt fmt_sep sp5 fmt sp6 end)};
-    my $eval = calc_evaluate($expr, $fmt);
-    if ($@) {
-        warn($@);
-        return $match;
-    }
-    if (defined $eq) {
-        return $start . $sp1 . $expr . $sp2 . $eq . $sp3 . $eval . ($sp4 // $sp3) . ($fmt_sep_fmt // '') . $end;
-    }
-    return $start . $sp1 . $eval . $sp2 . $end;
 }
