@@ -75,41 +75,28 @@ our $RX_CALC_TAG = qr{(?<start>${RX_START})
 #
 # with appropriate results.
 #
-# DEVEL: always follor $G{space2} with // $G{space1}
-#                              4                  3
-#                              6                  5
 sub eval_calc_tag {
     my ($match, %G) = @_;
     my $retval = "";
     my $result = eval_calc_str($G{expr}, $G{fmt}, $G{ident});
 
-    my $space21;
-    if (defined $G{space2}) {
-        if ($G{space2} eq "") {
-            $space21 = $G{space1};
-        } else {
-            $space21 = $G{space2};
-        }
-    }
-
-    my $space43;
-    if (defined $G{space4}) {
-        if ($G{space4} eq "") {
-            $space43 = $G{space3};
-        } else {
-            $space43 = $G{space4};
-        }
-    } else {
-        $space43 = $space21;
-    }
-
     $retval .= $G{start};
     $retval .= $G{part0_whole} if defined $G{part0_whole};
     $retval .= $G{part1_whole};
-    $retval .= "=";
-    $retval .= $space43;
-    $retval .= $result // "";
-    $retval .= $space43;
+
+    # we might not need to output the "= result" part
+    my $same = looks_like_number($G{expr}) && !defined $G{fmt} && !defined $G{old_result} &&
+        defined $result && $result == $G{expr};
+
+    if (!$same) {
+        my $space3 = $G{space3} // $G{space2};
+        my $space4 = $G{space4} // $G{space1};
+        $retval .= "=";
+        $retval .= $space3;
+        $retval .= $result // "";
+        $retval .= $space4;
+    }
+
     $retval .= $G{part3_whole} if defined $G{part3_whole};
     $retval .= $G{end};
     return $retval;
@@ -122,10 +109,6 @@ our @results;
 # return a printed representation
 sub eval_calc_str {
     my ($expr, $fmt, $ident) = @_;
-
-    if ($expr eq "DUMP") {
-        return dumper2(\@numeric_results);
-    }
 
     my $eval_expr;
     if (defined $ident) {
